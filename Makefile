@@ -1,0 +1,204 @@
+# CUDA Device Information
+#########################
+
+# Compiler Settings
+NVCC = nvcc
+CC = gcc
+NVCC_FLAGS = -O2 -std=c++11
+CC_FLAGS = -O2 -std=c99
+
+# GPU Architecture
+GPU_ARCH = \
+	-gencode=arch=compute_75,code=sm_75
+
+# Directories
+SRC_DIR = src
+C_DIR = $(SRC_DIR)/c
+BUILD_DIR = build
+
+# Source Files
+C_MAIN= $(C_DIR)/main.cu
+C_DEVICE_INFO = $(C_DIR)/device_info.cu
+
+# Object Files
+C_OBJECTS = $(BUILD_DIR)/c_main.o $(BUILD_DIR)/c_device_info.o
+
+# Target Executables
+TARGET_C = device_info_c
+
+# Colors for output
+RED = \033[0;31m
+GREEN = \033[0;32m
+YELLOW = \033[0;33m
+BLUE = \033[0;34m
+NC = \033[0m
+
+# Default Target 
+.PHONY: all
+all: $(BUILD_DIR) $(TARGET_C)
+	@echo "$(GREEN) Build Complete!$(NC)"
+	@echo "$(BLUE)Run: ./$(TARGET_C)$(NC)"
+
+# Create Build Directory
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
+
+# Build
+$(TARGET_C): $(C_OBJECTS)
+	@echo "$(BLUE)Linking C version...$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@
+
+# Compile Main
+$(BUILD_DIR)/c_main.o: $(C_MAIN)
+	@echo "$(YELLOW)Compiling C main...$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) -I$(C_DIR) -c $< -o $@
+
+# Compile Device Info
+$(BUILD_DIR)/c_device_info.o: $(C_DEVICE_INFO)
+	@echo "$(YELLOW)Compiling C device info...$(NC)"
+	$(NVCC) $(NVCC_FLAGS) -I$(C_DIR) -c $< -o $@
+
+# Individual Build Targets
+.PHONY: c
+
+c: $(BUILD_DIR) $(TARGET_C)
+	@echo "$(GREEN)C version ready: ./$(TARGET_C)$(NC)"
+
+# Test
+.PHONY: test test-c
+test: test-c
+	@echo "$(GREEN) All tests passed$(NC)"
+
+test-c: $(TARGET_C)
+	@echo "$(BLUE)Testing C version...$(NC)"
+	@timeout 30s ./$(TARGET_C) > /dev/null 2>&1 && \
+		echo "$(GREEN) C test passed$(NC)"
+		echo "$(RED) C test failed$(NC)"
+
+# Run Demo
+.PHONY:	demo demo-c
+demo: demo-c
+
+demo-c: $(TARGET_C)
+	@echo "$(BLUE)=== C Version Demo ===$(NC)"
+	@./$(TARGET_C) | head -n 20
+	@echo "$(BLUE)(output truncated for demo)$(NC)"
+
+# Clean Build Files
+.PHONY: clean clean-all
+clean:
+	@echo "$(YELLOW)Cleaning build files...$(NC)"
+	@rm -rf $(BUILD_DIR)
+	@rm -f $(TARGET_C)
+	@echo "$(GREEN) Clean Complete$(NC)"
+
+clean-all: clean
+	@echo "$(YELLOW)Cleaning all temporary files...$(NC)"
+	@rm -f *.tmp *.log
+
+# Check CUDA Installation
+.PHONY: check-cuda
+check-cuda:
+	@echo "$(BLUE)Checking CUDA installation...$(NC)"
+	@which nvcc > /dev/null || (echo "$(RED) nvcc not found$(NC)" && exit 1)
+	@echo "$(GREEN) nvcc found: $$(which nvcc)$(NC)"
+	@echo "$(BLUE)CUDA version:$(NC)"
+	@nvcc --version | grep "release"
+	@echo "$(BLUE)GPU status:$(NC)"
+	@nvidia-smi -L 2>/dev/null || echo "$(YELLOW)  nvidia-smi not available$(NC)"
+
+# Setup project (create directories, check dependencies)
+.PHONY: setup
+setup:
+	@echo "$(BLUE)Setting up project...$(NC)"
+	@mkdir -p $(SRC_DIR) $(C_DIR) $(BUILD_DIR)
+	@echo "$(GREEN) Directories created$(NC)"
+	@make check-cuda
+
+# Install executables to system (optional)
+.PHONY: install
+install: all
+	@echo "$(BLUE)Installing to /usr/local/bin...$(NC)"
+	@sudo cp $(TARGET_C) /usr/local/bin/cuda-device-info-c
+	@echo "$(GREEN) Installed as cuda-device-info-c$(NC)"
+
+# Remove from system
+.PHONY: uninstall
+uninstall:
+	@echo "$(YELLOW)Removing from /usr/local/bin...$(NC)"
+	@sudo rm -f /usr/local/bin/cuda-device-info-c
+	@echo "$(GREEN) Uninstalled$(NC)"
+
+# Detect GPU architecture automatically (advanced)
+.PHONY: detect-gpu
+detect-gpu:
+	@echo "$(BLUE)Detecting GPU architecture...$(NC)"
+	@nvidia-smi --query-gpu=compute_cap --format=csv,noheader,nounits 2>/dev/null | \
+		head -n1 | awk -F. '{printf "Detected compute capability: %s.%s\n", $$1, $$2}' || \
+		echo "$(YELLOW)  Could not detect GPU architecture$(NC)"
+
+# Show disk usage
+.PHONY: size
+size: all
+	@echo "$(BLUE)Build size information:$(NC)"
+	@ls -lh $(TARGET_CPP) $(TARGET_C) 2>/dev/null || echo "Executables not found"
+	@du -sh $(BUILD_DIR) 2>/dev/null || echo "Build directory not found"
+
+# Show make version and capabilities
+.PHONY: make-info
+make-info:
+	@echo "$(BLUE)Make information:$(NC)"
+	@make --version | head -n1
+	@echo "Available features: $(MAKE_VERSION)"
+
+# Memory usage during compilation
+.PHONY: memory-usage
+memory-usage:
+	@echo "$(BLUE)Monitoring memory usage during build...$(NC)"
+	@/usr/bin/time -v $(MAKE) clean all 2>&1 | grep -E "(Maximum resident|User time|System time)"
+
+# Performance benchmark
+.PHONY: benchmark
+benchmark: all
+	@echo "$(BLUE)Running performance benchmark...$(NC)"
+	@echo "C version timing:"
+	@time ./$(TARGET_C) > /dev/null 2>&1 || true
+
+# Security check (basic)
+.PHONY: security-check
+security-check:
+	@echo "$(BLUE)Basic security checks...$(NC)"
+	@find $(SRC_DIR) -name "*.c" -o -name "*.cpp" -o -name "*.cu" | \
+		xargs grep -n "strcpy\|strcat\|sprintf\|gets" || \
+		echo "$(GREEN) No unsafe functions found$(NC)"
+	
+# Code statistics
+.PHONY: stats
+stats:
+	@echo "$(BLUE)Code statistics:$(NC)"
+	@find $(SRC_DIR) -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.cu" | \
+		xargs wc -l | tail -n1
+	@echo "File breakdown:"
+	@find $(SRC_DIR) -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.cu" | \
+		xargs wc -l | head -n -1
+
+# Dependency check
+.PHONY: deps
+deps:
+	@echo "$(BLUE)Checking dependencies...$(NC)"
+	@echo "Make version: $$(make --version | head -n1)"
+	@echo "NVCC version: $$(nvcc --version | grep release || echo 'Not found')"
+	@echo "GCC version: $$(gcc --version | head -n1 || echo 'Not found')"
+
+# One-line build and test
+.PHONY: build-and-test
+build-and-test:
+	@$(MAKE) --no-print-directory clean all test
+
+# Show GPU memory usage (if nvidia-smi available)
+.PHONY: gpu-status
+gpu-status:
+	@echo "$(BLUE)GPU Status:$(NC)"
+	@nvidia-smi --query-gpu=name,memory.total,memory.used,utilization.gpu --format=csv 2>/dev/null || \
+		echo "$(YELLOW)  nvidia-smi not available$(NC)"
+
