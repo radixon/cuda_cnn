@@ -8,8 +8,7 @@ NVCC_FLAGS = -O2 -std=c++11
 CC_FLAGS = -O2 -std=c99
 
 # GPU Architecture
-GPU_ARCH = \
-	-gencode=arch=compute_75,code=sm_75
+GPU_ARCH = -gencode=arch=compute_75,code=sm_75
 
 # Directories
 SRC_DIR = src
@@ -43,7 +42,7 @@ all: $(BUILD_DIR) $(TARGET_C)
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
-# Build
+# Build Executable
 $(TARGET_C): $(C_OBJECTS)
 	@echo "$(BLUE)Linking C version...$(NC)"
 	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@
@@ -72,32 +71,23 @@ test: test-c
 test-c: $(TARGET_C)
 	@echo "$(BLUE)Testing C version...$(NC)"
 	@timeout 30s ./$(TARGET_C) > /dev/null 2>&1 && \
-		echo "$(GREEN) C test passed$(NC)"
+		echo "$(GREEN) C test passed$(NC)" || \
 		echo "$(RED) C test failed$(NC)"
 
-# Run Demo
-.PHONY:	demo demo-c
-demo: demo-c
-
-demo-c: $(TARGET_C)
-	@echo "$(BLUE)=== C Version Demo ===$(NC)"
-	@./$(TARGET_C) | head -n 20
-	@echo "$(BLUE)(output truncated for demo)$(NC)"
-
 # Clean Build Files
-.PHONY: clean clean-all
+.PHONY: clean	clean-all
 clean:
 	@echo "$(YELLOW)Cleaning build files...$(NC)"
 	@rm -rf $(BUILD_DIR)
 	@rm -f $(TARGET_C)
 	@echo "$(GREEN) Clean Complete$(NC)"
 
-clean-all: clean
+clean-all:	clean
 	@echo "$(YELLOW)Cleaning all temporary files...$(NC)"
 	@rm -f *.tmp *.log
 
 # Check CUDA Installation
-.PHONY: check-cuda
+.PHONY:	check-cuda
 check-cuda:
 	@echo "$(BLUE)Checking CUDA installation...$(NC)"
 	@which nvcc > /dev/null || (echo "$(RED) nvcc not found$(NC)" && exit 1)
@@ -115,20 +105,6 @@ setup:
 	@echo "$(GREEN) Directories created$(NC)"
 	@make check-cuda
 
-# Install executables to system (optional)
-.PHONY: install
-install: all
-	@echo "$(BLUE)Installing to /usr/local/bin...$(NC)"
-	@sudo cp $(TARGET_C) /usr/local/bin/cuda-device-info-c
-	@echo "$(GREEN) Installed as cuda-device-info-c$(NC)"
-
-# Remove from system
-.PHONY: uninstall
-uninstall:
-	@echo "$(YELLOW)Removing from /usr/local/bin...$(NC)"
-	@sudo rm -f /usr/local/bin/cuda-device-info-c
-	@echo "$(GREEN) Uninstalled$(NC)"
-
 # Detect GPU architecture automatically (advanced)
 .PHONY: detect-gpu
 detect-gpu:
@@ -141,7 +117,7 @@ detect-gpu:
 .PHONY: size
 size: all
 	@echo "$(BLUE)Build size information:$(NC)"
-	@ls -lh $(TARGET_CPP) $(TARGET_C) 2>/dev/null || echo "Executables not found"
+	@ls -lh $(TARGET_C) 2>/dev/null || echo "Executables not found"
 	@du -sh $(BUILD_DIR) 2>/dev/null || echo "Build directory not found"
 
 # Show make version and capabilities
@@ -190,11 +166,6 @@ deps:
 	@echo "NVCC version: $$(nvcc --version | grep release || echo 'Not found')"
 	@echo "GCC version: $$(gcc --version | head -n1 || echo 'Not found')"
 
-# One-line build and test
-.PHONY: build-and-test
-build-and-test:
-	@$(MAKE) --no-print-directory clean all test
-
 # Show GPU memory usage (if nvidia-smi available)
 .PHONY: gpu-status
 gpu-status:
@@ -202,3 +173,27 @@ gpu-status:
 	@nvidia-smi --query-gpu=name,memory.total,memory.used,utilization.gpu --format=csv 2>/dev/null || \
 		echo "$(YELLOW)  nvidia-smi not available$(NC)"
 
+# Show help
+help:
+	@echo "$(GREEN) Available make targets:$(NC)"
+	@echo "		all	-	Build everything (default)"
+	@echo "		c	-	Build the C version"
+	@echo "		test	-	Run all tests"
+	@echo "		test-c	-	Run C version test"
+	@echo "		size	-	Show build size information"
+	@echo "		setup	-	Setup project directories & check CUDA"
+	@echo "		stats	-	Show code statistics"
+	@echo "		deps	-	Check compiler/dependency versions"
+	@echo "		clean	-	Remove build files"
+	@echo "		help	-	Show this help"
+	@echo " "
+	@echo "		clean-all	-	Remove build + temporary files"
+	@echo "		check-cuda	-	Check CUDA installation"
+	@echo "		detect-gpu	-	Detect GPU architecture"
+	@echo "		make-info	-	Show make version and capabilities"
+	@echo "		benchmark	-	Run performance benchmark"
+	@echo "		gpu-status	-	Show GPU memory and utilization"
+	@echo "		memory-usage	-	Monitor memory usage during build"
+	@echo "		security-check	-	Scan for unsafe functions"
+
+.PHONY: all test clean help
