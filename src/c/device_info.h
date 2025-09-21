@@ -3,6 +3,10 @@
 
 #include <cuda_runtime.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Error Handling
 void check_cuda_error(cudaError_t error, const char* operation);
 
@@ -31,5 +35,9 @@ const char* get_device_name(int device_id);
 // Formatting Helpers
 void format_bytes(size_t bytes, char* buffer, size_t buffer_size);
 void format_frequency(int clock_rate_khz, char* buffer, size_t buffer_size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

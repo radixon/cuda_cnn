@@ -13,17 +13,20 @@ GPU_ARCH = -gencode=arch=compute_75,code=sm_75
 # Directories
 SRC_DIR = src
 C_DIR = $(SRC_DIR)/c
+CPP_DIR = $(SRC_DIR)/cpp
 BUILD_DIR = build
 
 # Source Files
-C_MAIN= $(C_DIR)/main.cu
-C_DEVICE_INFO = $(C_DIR)/device_info.cu
+C_SOURCES = $(C_DIR)/main.cu $(C_DIR)/device_info.cu
+CPP_SOURCES = $(CPP_DIR)/main.cu $(CPP_DIR)/device_info.cu
 
 # Object Files
 C_OBJECTS = $(BUILD_DIR)/c_main.o $(BUILD_DIR)/c_device_info.o
+CPP_OBJECTS = $(BUILD_DIR)/cpp_main.o $(BUILD_DIR)/cpp_device_info.o
 
 # Target Executables
 TARGET_C = device_info_c
+TARGET_CPP = device_info_cpp
 
 # Colors for output
 RED = \033[0;31m
@@ -34,38 +37,69 @@ NC = \033[0m
 
 # Default Target 
 .PHONY: all
-all: $(BUILD_DIR) $(TARGET_C)
+all: $(BUILD_DIR) $(TARGET_C) $(TARGET_CPP)
 	@echo "$(GREEN) Build Complete!$(NC)"
-	@echo "$(BLUE)Run: ./$(TARGET_C)$(NC)"
+	@echo "$(BLUE)Run C version: ./$(TARGET_C)$(NC)"
+	@echo "$(BLUE)Run C++ version: ./$(TARGET_CPP)$(NC)"
 
 # Create Build Directory
 $(BUILD_DIR):
+	@echo "$(YELLOW) Creating build Directory$(NC)"
 	@mkdir -p $(BUILD_DIR)
 
+###############################################################################
+#	C (CUDA) Build Rules
+###############################################################################
 # Build Executable
 $(TARGET_C): $(C_OBJECTS)
 	@echo "$(BLUE)Linking C version...$(NC)"
 	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@
 
 # Compile Main
-$(BUILD_DIR)/c_main.o: $(C_MAIN)
+$(BUILD_DIR)/c_main.o: $(C_DIR)/main.cu
 	@echo "$(YELLOW)Compiling C main...$(NC)"
 	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) -I$(C_DIR) -c $< -o $@
 
 # Compile Device Info
-$(BUILD_DIR)/c_device_info.o: $(C_DEVICE_INFO)
+$(BUILD_DIR)/c_device_info.o: $(C_DIR)/device_info.cu
 	@echo "$(YELLOW)Compiling C device info...$(NC)"
 	$(NVCC) $(NVCC_FLAGS) -I$(C_DIR) -c $< -o $@
 
-# Individual Build Targets
-.PHONY: c
+
+###############################################################################
+#	C++ (CUDA) Build Rules
+###############################################################################
+# Build Executable
+$(TARGET_CPP): $(CPP_OBJECTS)
+	@echo "$(BLUE)Linking C++ version...$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@
+
+# Compile Main
+$(BUILD_DIR)/cpp_main.o: $(CPP_DIR)/main.cu
+	@echo "$(YELLOW)Compiling C++ main...$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) -I$(C_DIR) -c $< -o $@
+
+# Compile Device Info
+$(BUILD_DIR)/cpp_device_info.o: $(CPP_DIR)/device_info.cu
+	@echo "$(YELLOW)Compiling C++ device info...$(NC)"
+	$(NVCC) $(NVCC_FLAGS) -I$(CPP_DIR) -c $< -o $@
+
+###############################################################################
+#	Individual Build Targets
+###############################################################################
+.PHONY: c cpp
 
 c: $(BUILD_DIR) $(TARGET_C)
 	@echo "$(GREEN)C version ready: ./$(TARGET_C)$(NC)"
 
-# Test
-.PHONY: test test-c
-test: test-c
+cpp: $(BUILD_DIR) $(TARGET_CPP)
+	@echo "$(GREEN)C++ version ready: ./$(TARGET_CPP)$(NC)"
+
+###############################################################################
+#	Tests
+###############################################################################
+.PHONY: test test-c test-cpp
+test: test-c test-cpp
 	@echo "$(GREEN) All tests passed$(NC)"
 
 test-c: $(TARGET_C)
@@ -74,17 +108,28 @@ test-c: $(TARGET_C)
 		echo "$(GREEN) C test passed$(NC)" || \
 		echo "$(RED) C test failed$(NC)"
 
-# Clean Build Files
+test-cpp: $(TARGET_CPP)
+	@echo "$(BLUE)Testing C++ version...$(NC)"
+	@timeout 30s ./$(TARGET_CPP) > /dev/null 2>&1 && \
+		echo "$(GREEN) C++ test passed$(NC)" || \
+		echo "$(RED) C++ test failed$(NC)"
+
+###############################################################################
+#	Clean
+###############################################################################
 .PHONY: clean	clean-all
 clean:
 	@echo "$(YELLOW)Cleaning build files...$(NC)"
 	@rm -rf $(BUILD_DIR)
-	@rm -f $(TARGET_C)
+	@rm -f $(TARGET_C) $(TARGET_CPP)
 	@echo "$(GREEN) Clean Complete$(NC)"
 
 clean-all:	clean
 	@echo "$(YELLOW)Cleaning all temporary files...$(NC)"
+	@rm -rf $(BUILD_DIR)
+	@rm -f $(TARGET_C) $(TARGET_CPP)
 	@rm -f *.tmp *.log
+	@echo "$(GREEN) Clean Complete$(NC)"
 
 # Check CUDA Installation
 .PHONY:	check-cuda
