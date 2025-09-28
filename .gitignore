@@ -4,3 +4,10 @@
 *.ptx
 *.cubin
 *.fatbin
+
+# VSCode and IDE configs
+.vscode/
+.idea/
+
+# Builds
+build/
