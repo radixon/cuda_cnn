@@ -62,11 +62,11 @@ cuda_cnn/
 │   ├── src/
 │   │   ├── c/                     # Traditional C implementation
 │   │   │   ├── main.cu            # Main program with manual memory management
-│   │   │   ├── helpfunctions.hpp  # Traditional C header
+│   │   │   ├── helpfunctions.h    # Traditional C header
 │   │   │   └── helpfunctions.cu   # Traditional C implementation
 │   │   └── cpp/                   # C++ implementation with RAII
 │   │       ├── main.cu            # Main program with RAII wrappers
-│   │       ├── helpfunctions.h    # Header with RAII declarations
+│   │       ├── helpfunctions.hpp  # Header with RAII declarations
 │   │       └── helpfunctions.cu   # Implementation with RAII functions
 ├── .gitignore                     # 
 └── LICENSE                        # Copyright Information
