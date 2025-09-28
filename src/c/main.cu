@@ -1,3 +1,4 @@
+// main.cu
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
