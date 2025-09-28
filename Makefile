@@ -1,14 +1,20 @@
-# CUDA Device Information
+# Matrix Addition
 #########################
 
 # Compiler Settings
 NVCC = nvcc
-CC = gcc
-NVCC_FLAGS = -O2 -std=c++11
-CC_FLAGS = -O2 -std=c99
+NVCC_FLAGS = -O2 -std=c++14 -Xcompiler -fPIC
+CXX = g++
+CXX_FLAGS = -O2 -std=c++14 -Wall -Wextra -fPIC
 
 # GPU Architecture
-GPU_ARCH = -gencode=arch=compute_75,code=sm_75
+GPU_ARCH = -gencode arch=compute_86,code=sm_86
+
+# CUDA paths
+CUDA_PATH ?= /usr/local/cuda
+INCLUDES = -I$(CUDA_PATH)/include
+LDFLAGS = -L$(CUDA_PATH)/lib64
+LDLIBS = -lcudart
 
 # Directories
 SRC_DIR = src
@@ -17,16 +23,24 @@ CPP_DIR = $(SRC_DIR)/cpp
 BUILD_DIR = build
 
 # Source Files
-C_SOURCES = $(C_DIR)/main.cu $(C_DIR)/device_info.cu
-CPP_SOURCES = $(CPP_DIR)/main.cu $(CPP_DIR)/device_info.cu
+C_SOURCES = $(C_DIR)/main.cu
+C_HELPER_SOURCE = $(C_DIR)/helpfunctions.cu
+C_HELPER_HEADER = $(C_DIR)/helpfunctions.h
+
+CPP_SOURCES = $(CPP_DIR)/main.cu
+CPP_HELPER_SOURCE = $(CPP_DIR)/helpfunctions.cu 
+CPP_HEADERS = $(CPP_DIR)/helpfunctions.hpp 
 
 # Object Files
-C_OBJECTS = $(BUILD_DIR)/c_main.o $(BUILD_DIR)/c_device_info.o
-CPP_OBJECTS = $(BUILD_DIR)/cpp_main.o $(BUILD_DIR)/cpp_device_info.o
+C_OBJECTS = $(BUILD_DIR)/c_main.o \
+			$(BUILD_DIR)/c_helper.o 
+
+CPP_OBJECTS = $(BUILD_DIR)/cpp_main.o \
+              $(BUILD_DIR)/cpp_helpfunctions.o 
 
 # Target Executables
-TARGET_C = device_info_c
-TARGET_CPP = device_info_cpp
+TARGET_C = matrix_add_c
+TARGET_CPP = matrix_add_cpp
 
 # Colors for output
 RED = \033[0;31m
@@ -39,8 +53,8 @@ NC = \033[0m
 .PHONY: all
 all: $(BUILD_DIR) $(TARGET_C) $(TARGET_CPP)
 	@echo "$(GREEN) Build Complete!$(NC)"
-	@echo "$(BLUE)Run C version: ./$(TARGET_C)$(NC)"
-	@echo "$(BLUE)Run C++ version: ./$(TARGET_CPP)$(NC)"
+	@echo "$(BLUE)Run C version --> ./$(TARGET_C)$(NC)"
+	@echo "$(BLUE)Run C++ version --> ./$(TARGET_CPP)$(NC)"
 
 # Create Build Directory
 $(BUILD_DIR):
@@ -52,193 +66,179 @@ $(BUILD_DIR):
 ###############################################################################
 # Build Executable
 $(TARGET_C): $(C_OBJECTS)
-	@echo "$(BLUE)Linking C version...$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@
+	@echo "$(BLUE)Linking C Version$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Compile Main
-$(BUILD_DIR)/c_main.o: $(C_DIR)/main.cu
-	@echo "$(YELLOW)Compiling C main...$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) -I$(C_DIR) -c $< -o $@
+$(BUILD_DIR)/c_main.o: $(C_SOURCES) $(C_HELPER_HEADER)
+	@echo "$(YELLOW)Compiling C main$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(SRC_DIR) -c $< -o $@
 
-# Compile Device Info
-$(BUILD_DIR)/c_device_info.o: $(C_DIR)/device_info.cu
-	@echo "$(YELLOW)Compiling C device info...$(NC)"
-	$(NVCC) $(NVCC_FLAGS) -I$(C_DIR) -c $< -o $@
-
+# Compile C Helper Functions
+$(BUILD_DIR)/c_helper.o: $(C_HELPER_SOURCE) $(C_HELPER_HEADER)
+	@echo "$(YELLOW)Compiling C helper functions$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(SRC_DIR) -c $< -o $@
 
 ###############################################################################
 #	C++ (CUDA) Build Rules
 ###############################################################################
 # Build Executable
 $(TARGET_CPP): $(CPP_OBJECTS)
-	@echo "$(BLUE)Linking C++ version...$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@
+	@echo "$(BLUE)Linking C++ version$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Compile Main
-$(BUILD_DIR)/cpp_main.o: $(CPP_DIR)/main.cu
-	@echo "$(YELLOW)Compiling C++ main...$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) -I$(C_DIR) -c $< -o $@
+$(BUILD_DIR)/cpp_main.o: $(CPP_DIR)/main.cu $(CPP_HEADERS)
+	@echo "$(YELLOW)Compiling C++ main$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) -I$(SRC_DIR) -c $< -o $@
 
-# Compile Device Info
-$(BUILD_DIR)/cpp_device_info.o: $(CPP_DIR)/device_info.cu
-	@echo "$(YELLOW)Compiling C++ device info...$(NC)"
-	$(NVCC) $(NVCC_FLAGS) -I$(CPP_DIR) -c $< -o $@
+# Compile C++ Help Functions
+$(BUILD_DIR)/cpp_helpfunctions.o: $(CPP_DIR)/helpfunctions.cu $(CPP_DIR)/helpfunctions.hpp
+	@echo "$(YELLOW)Compiling C++ helper functions$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -c $< -o $@
 
 ###############################################################################
-#	Individual Build Targets
+#	Build Targets
 ###############################################################################
 .PHONY: c cpp
-
 c: $(BUILD_DIR) $(TARGET_C)
-	@echo "$(GREEN)C version ready: ./$(TARGET_C)$(NC)"
+	@echo "$(GREEN)C Build Complete --> ./$(TARGET_C)$(NC)"
 
 cpp: $(BUILD_DIR) $(TARGET_CPP)
-	@echo "$(GREEN)C++ version ready: ./$(TARGET_CPP)$(NC)"
+	@echo "$(GREEN)C++ Build Complete --> ./$(TARGET_CPP)$(NC)"
 
 ###############################################################################
-#	Tests
+#	Debug Build 
 ###############################################################################
-.PHONY: test test-c test-cpp
-test: test-c test-cpp
-	@echo "$(GREEN) All tests passed$(NC)"
+.PHONY: debug debug-c debug-cpp
+debug: debug-c debug-cpp
+	@echo "$(GREEN)Debug builds complete!$(NC)"
 
-test-c: $(TARGET_C)
-	@echo "$(BLUE)Testing C version...$(NC)"
-	@timeout 30s ./$(TARGET_C) > /dev/null 2>&1 && \
-		echo "$(GREEN) C test passed$(NC)" || \
-		echo "$(RED) C test failed$(NC)"
+debug-c: NVCC_FLAGS += -g -G -DDEBUG
+debug-c: TARGET_C := $(TARGET_C)_debug
+debug-c: $(BUILD_DIR) $(TARGET_C)
+	@echo "$(GREEN)C debug build complete: ./$(TARGET_C)$(NC)"
 
-test-cpp: $(TARGET_CPP)
-	@echo "$(BLUE)Testing C++ version...$(NC)"
-	@timeout 30s ./$(TARGET_CPP) > /dev/null 2>&1 && \
-		echo "$(GREEN) C++ test passed$(NC)" || \
-		echo "$(RED) C++ test failed$(NC)"
+debug-cpp: NVCC_FLAGS += -g -G -DDEBUG
+debug-cpp: TARGET_CPP := $(TARGET_CPP)_debug
+debug-cpp: $(BUILD_DIR) $(TARGET_CPP)
+	@echo "$(GREEN)C++ debug build complete: ./$(TARGET_CPP)$(NC)"
+
+###############################################################################
+#	Run Program
+###############################################################################
+.PHONY: run run-c run-cpp
+run: run-c run-cpp
+
+run-c: $(TARGET_C)
+	@echo "$(BLUE)Running C Matrix Addition$(NC)"
+	@./$(TARGET_C)
+
+run-cpp: $(TARGET_CPP)
+	@echo "$(BLUE)Running C++ Matrix Addition$(NC)"
+	@./$(TARGET_CPP)
 
 ###############################################################################
 #	Clean
 ###############################################################################
-.PHONY: clean	clean-all
+.PHONY: clean clean-all
 clean:
-	@echo "$(YELLOW)Cleaning build files...$(NC)"
-	@rm -rf $(BUILD_DIR)
-	@rm -f $(TARGET_C) $(TARGET_CPP)
-	@echo "$(GREEN) Clean Complete$(NC)"
+	@echo "$(YELLOW)Cleaning build files$(NC)"
+	@rm -rf $(BUILD_DIR) $(TARGET_C) $(TARGET_CPP)
+	@rm -f $(TARGET_C)_debug $(TARGET_CPP)_debug
+	@echo "$(GREEN)Clean complete$(NC)"
 
-clean-all:	clean
-	@echo "$(YELLOW)Cleaning all temporary files...$(NC)"
-	@rm -rf $(BUILD_DIR)
-	@rm -f $(TARGET_C) $(TARGET_CPP)
-	@rm -f *.tmp *.log
-	@echo "$(GREEN) Clean Complete$(NC)"
+clean-all: clean
+	@echo "$(YELLOW)Cleaning all generated files$(NC)"
+	@rm -f $(C_HEADER)
+	@echo "$(GREEN)Deep clean complete$(NC)"
 
-# Check CUDA Installation
-.PHONY:	check-cuda
+###############################################################################
+#	Check CUDA Installation
+###############################################################################
+.PHONY: check-cuda
 check-cuda:
-	@echo "$(BLUE)Checking CUDA installation...$(NC)"
-	@which nvcc > /dev/null || (echo "$(RED) nvcc not found$(NC)" && exit 1)
-	@echo "$(GREEN) nvcc found: $$(which nvcc)$(NC)"
-	@echo "$(BLUE)CUDA version:$(NC)"
-	@nvcc --version | grep "release"
-	@echo "$(BLUE)GPU status:$(NC)"
-	@nvidia-smi -L 2>/dev/null || echo "$(YELLOW)  nvidia-smi not available$(NC)"
+	@echo "$(BLUE)Checking CUDA installation$(NC)"
+	@echo "NVCC Version:"
+	@nvcc --version 2>/dev/null || echo "$(RED) NVCC not found$(NC)"
+	@echo "\nCUDA Devices:"
+	@nvidia-smi -L 2>/dev/null || echo "$(RED)No CUDA devices found$(NC)"
 
-# Setup project (create directories, check dependencies)
-.PHONY: setup
-setup:
-	@echo "$(BLUE)Setting up project...$(NC)"
-	@mkdir -p $(SRC_DIR) $(C_DIR) $(BUILD_DIR)
-	@echo "$(GREEN) Directories created$(NC)"
-	@make check-cuda
+###############################################################################
+#	GPU Info
+###############################################################################
+.PHONY: gpu-info
+gpu-info:
+	@echo "$(BLUE)GPU Information:$(NC)"
+	@nvidia-smi --query-gpu=name,memory.total,compute_cap --format=csv,noheader
 
-# Detect GPU architecture automatically (advanced)
-.PHONY: detect-gpu
-detect-gpu:
-	@echo "$(BLUE)Detecting GPU architecture...$(NC)"
-	@nvidia-smi --query-gpu=compute_cap --format=csv,noheader,nounits 2>/dev/null | \
-		head -n1 | awk -F. '{printf "Detected compute capability: %s.%s\n", $$1, $$2}' || \
-		echo "$(YELLOW)  Could not detect GPU architecture$(NC)"
+###############################################################################
+#	Performance Testing
+###############################################################################
+.PHONY: benchmark benchmark-c benchmark-cpp
+benchmark: benchmark-c benchmark-cpp
 
-# Show disk usage
-.PHONY: size
-size: all
-	@echo "$(BLUE)Build size information:$(NC)"
-	@ls -lh $(TARGET_C) 2>/dev/null || echo "Executables not found"
-	@du -sh $(BUILD_DIR) 2>/dev/null || echo "Build directory not found"
+benchmark-c: $(TARGET_C)
+	@echo "$(BLUE)Running C benchmark$(NC)"
+	@time ./$(TARGET_C)
 
-# Show make version and capabilities
-.PHONY: make-info
-make-info:
-	@echo "$(BLUE)Make information:$(NC)"
-	@make --version | head -n1
-	@echo "Available features: $(MAKE_VERSION)"
+benchmark-cpp: $(TARGET_CPP)
+	@echo "$(BLUE)Running C++ benchmark$(NC)"
+	@time ./$(TARGET_CPP)
 
-# Memory usage during compilation
-.PHONY: memory-usage
-memory-usage:
-	@echo "$(BLUE)Monitoring memory usage during build...$(NC)"
-	@/usr/bin/time -v $(MAKE) clean all 2>&1 | grep -E "(Maximum resident|User time|System time)"
+###############################################################################
+#	Show Configuration
+###############################################################################
+.PHONY: config
+config:
+	@echo "$(BLUE)Build Configuration:$(NC)"
+	@echo "  NVCC: $(NVCC)"
+	@echo "  NVCC_FLAGS: $(NVCC_FLAGS)"
+	@echo "  GPU_ARCH: $(GPU_ARCH)"
+	@echo "  INCLUDES: $(INCLUDES)"
+	@echo "  LDFLAGS: $(LDFLAGS)"
+	@echo "  LDLIBS: $(LDLIBS)"
+	@echo "  C_SOURCE: $(C_SOURCES)"
+	@echo "  CPP_SOURCE: $(CPP_SOURCES)"
+	@echo "  HELPER: $(C_HEADER)"
 
-# Performance benchmark
-.PHONY: benchmark
-benchmark: all
-	@echo "$(BLUE)Running performance benchmark...$(NC)"
-	@echo "C version timing:"
-	@time ./$(TARGET_C) > /dev/null 2>&1 || true
-
-# Security check (basic)
-.PHONY: security-check
-security-check:
-	@echo "$(BLUE)Basic security checks...$(NC)"
-	@find $(SRC_DIR) -name "*.c" -o -name "*.cpp" -o -name "*.cu" | \
-		xargs grep -n "strcpy\|strcat\|sprintf\|gets" || \
-		echo "$(GREEN) No unsafe functions found$(NC)"
-	
-# Code statistics
-.PHONY: stats
-stats:
-	@echo "$(BLUE)Code statistics:$(NC)"
-	@find $(SRC_DIR) -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.cu" | \
-		xargs wc -l | tail -n1
-	@echo "File breakdown:"
-	@find $(SRC_DIR) -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.cu" | \
-		xargs wc -l | head -n -1
-
-# Dependency check
-.PHONY: deps
-deps:
-	@echo "$(BLUE)Checking dependencies...$(NC)"
-	@echo "Make version: $$(make --version | head -n1)"
-	@echo "NVCC version: $$(nvcc --version | grep release || echo 'Not found')"
-	@echo "GCC version: $$(gcc --version | head -n1 || echo 'Not found')"
-
-# Show GPU memory usage (if nvidia-smi available)
-.PHONY: gpu-status
-gpu-status:
-	@echo "$(BLUE)GPU Status:$(NC)"
-	@nvidia-smi --query-gpu=name,memory.total,memory.used,utilization.gpu --format=csv 2>/dev/null || \
-		echo "$(YELLOW)  nvidia-smi not available$(NC)"
-
-# Show help
+###############################################################################
+#	Help
+###############################################################################
+.PHONY: help
 help:
-	@echo "$(GREEN) Available make targets:$(NC)"
-	@echo "		all	-	Build everything (default)"
-	@echo "		c	-	Build the C version"
-	@echo "		test	-	Run all tests"
-	@echo "		test-c	-	Run C version test"
-	@echo "		size	-	Show build size information"
-	@echo "		setup	-	Setup project directories & check CUDA"
-	@echo "		stats	-	Show code statistics"
-	@echo "		deps	-	Check compiler/dependency versions"
-	@echo "		clean	-	Remove build files"
-	@echo "		help	-	Show this help"
-	@echo " "
-	@echo "		clean-all	-	Remove build + temporary files"
-	@echo "		check-cuda	-	Check CUDA installation"
-	@echo "		detect-gpu	-	Detect GPU architecture"
-	@echo "		make-info	-	Show make version and capabilities"
-	@echo "		benchmark	-	Run performance benchmark"
-	@echo "		gpu-status	-	Show GPU memory and utilization"
-	@echo "		memory-usage	-	Monitor memory usage during build"
-	@echo "		security-check	-	Scan for unsafe functions"
+	@echo "$(GREEN)CUDA Matrix Addition Makefile$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Check:$(NC)"
+	@echo "  check-files  - Check if source files exist"
+	@echo ""
+	@echo "$(YELLOW)Build:$(NC)"
+	@echo "  all          - Build both versions (default)"
+	@echo "  c            - Build C version only"
+	@echo "  cpp          - Build C++ version only"
+	@echo "  debug        - Build debug versions"
+	@echo "  debug-c      - Build C debug version"
+	@echo "  debug-cpp    - Build C++ debug version"
+	@echo ""
+	@echo "$(YELLOW)Run:$(NC)"
+	@echo "  run          - Run both versions"
+	@echo "  run-c        - Run C version"
+	@echo "  run-cpp      - Run C++ version"
+	@echo "  benchmark    - Benchmark both versions"
+	@echo ""
+	@echo "$(YELLOW)Utility:$(NC)"
+	@echo "  clean        - Remove build files"
+	@echo "  clean-all    - Remove all generated files"
+	@echo "  check-cuda   - Check CUDA installation"
+	@echo "  gpu-info     - Show GPU information"
+	@echo "  config       - Show build configuration"
+	@echo "  help         - Show this help"
+	@echo ""
+	@echo "$(YELLOW)Example workflow:$(NC)"
+	@echo "  make setup   # Setup project"
+	@echo "  # Copy main.cu to src/c/ and src/cpp/"
+	@echo "  make run     # Build and run both versions"
 
-.PHONY: all test clean help
+.PHONY: all clean help setup debug run benchmark memcheck check-cuda gpu-info \
+        config c cpp debug-c debug-cpp run-c run-cpp benchmark-c benchmark-cpp \
+        memcheck-c memcheck-cpp create-helper check-files clean-all
