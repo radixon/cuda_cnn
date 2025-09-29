@@ -200,7 +200,8 @@ config:
 	@echo "  LDLIBS: $(LDLIBS)"
 	@echo "  C_SOURCE: $(C_SOURCES)"
 	@echo "  CPP_SOURCE: $(CPP_SOURCES)"
-	@echo "  HELPER: $(C_HEADER)"
+	@echo "  C_HELPER: $(C_HELPER_HEADER)"
+	@echo "  CPP_HELPER: $(CPP_HEADERS)"
 
 ###############################################################################
 #	Help
