@@ -153,7 +153,7 @@ __global__ void sumMatrixOnGPU2D(float *MatA, float *MatB, float *MatC, int nx, 
 CudaDevice::CudaDevice(int dev) : deviceId(dev), initialized(false) {
     struct cudaDeviceProp deviceProp;
     CHECK(cudaGetDeviceProperties(&deviceProp, deviceId));
-    printf("RAII: Setting up Device %d: %s\n", deviceId, deviceProp.name);
+    printf("Setting up Device %d: %s\n", deviceId, deviceProp.name);
     CHECK(cudaSetDevice(deviceId));
     initialized = true;
 }
@@ -162,9 +162,9 @@ CudaDevice::~CudaDevice() {
     if (initialized) {
         cudaError_t error = cudaDeviceReset();
         if (error != cudaSuccess) {
-            printf("RAII: Error resetting device %d: %s\n", deviceId, cudaGetErrorString(error));
+            printf("Error resetting device %d: %s\n", deviceId, cudaGetErrorString(error));
         } else {
-            printf("RAII: Device %d reset successfully\n", deviceId);
+            printf("Device %d reset successfully\n", deviceId);
         }
         initialized = false;
     }
