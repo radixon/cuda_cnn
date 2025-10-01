@@ -1,20 +1,15 @@
-*.i
-*.ii
-*.gpu
-*.ptx
-*.cubin
-*.fatbin
-
-# VSCode and IDE configs
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# Builds
-<<<<<<< HEAD
+# Build artifacts
 build/
-
-# Git
-.git/
-=======
-build/
->>>>>>> 14895c58600b1a5d362f26cdfb81f037917fc37f
+bin/
+*.o
+*.out
+*.exe
+*.so
+*.a
