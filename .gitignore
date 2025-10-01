@@ -11,3 +11,6 @@
 
 # Builds
 build/
+
+# Git
+.git/
