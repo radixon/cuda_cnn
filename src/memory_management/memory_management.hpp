@@ -1,6 +1,6 @@
-// helpfunctions.hpp
-#ifndef HELPFUNCTIONS_H
-#define HELPFUNCTIONS_H
+// memroy_management.hpp
+#ifndef MEMORY_MANAGEMENT_H
+#define MEMORY_MANAGEMENT_H
 
 #include <sys/time.h>
 #include <stdlib.h>
@@ -127,22 +127,6 @@ extern "C" {
         exit(-10*error);                                                    \
     }                                                                       \
 }
-
-// Original function declarations
-double cpuSecond(void);
-void initialData(float *ip, int size);
-void checkResult(float *hostRef, float *gpuRef, int N);
-
-// Additional utility functions
-void printMatrix(float *matrix, int nx, int ny, const char* name);
-void formatBytes(size_t bytes, char* buffer, size_t buffer_size);
-void printDeviceInfo(void);
-
-// Sum Matrix on Host
-void sumMatrixOnHost (float *A, float *B, float *C, const int nx, const int ny);
-
-// Sum Matrix on Device
-__global__ void sumMatrixOnGPU2D(float *MatA, float *MatB, float *MatC, int nx, int ny);
 
 #ifdef __cplusplus
 }
@@ -277,4 +261,4 @@ inline size_t DeviceMemory<T>::getCount() const { return size / sizeof(T); }
 
 #endif // __cplusplus
 
-#endif // HELPFUNCTIONS_H
+#endif // MEMORY_MANAGEMENT_H

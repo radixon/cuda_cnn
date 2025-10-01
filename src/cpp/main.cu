@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "helpfunctions.hpp"  
+#include "addition.h"
+#include "memory_management.hpp"  
 
 
 

@@ -1,5 +1,5 @@
-// helpfunctions.cu
-#include "helpfunctions.h"
+// addition.cu
+#include "addition.h"
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>

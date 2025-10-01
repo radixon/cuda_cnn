@@ -1,4 +1,4 @@
-// helpfunctions.h
+// addition.h
 #ifndef HELPFUNCTIONS_H
 #define HELPFUNCTIONS_H
 

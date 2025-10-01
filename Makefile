@@ -20,27 +20,27 @@ LDLIBS = -lcudart
 SRC_DIR = src
 C_DIR = $(SRC_DIR)/c
 CPP_DIR = $(SRC_DIR)/cpp
+ADDITION_DIR = $(SRC_DIR)/addition
+MEMORY_MANAGEMENT_DIR = $(SRC_DIR)/memory_management
 BUILD_DIR = build
 
 # Source Files
-C_SOURCES = $(C_DIR)/main.cu
-C_HELPER_SOURCE = $(C_DIR)/helpfunctions.cu
-C_HELPER_HEADER = $(C_DIR)/helpfunctions.h
-
-CPP_SOURCES = $(CPP_DIR)/main.cu
-CPP_HELPER_SOURCE = $(CPP_DIR)/helpfunctions.cu 
-CPP_HEADERS = $(CPP_DIR)/helpfunctions.hpp 
+C_SOURCE = $(C_DIR)/main.cu
+CPP_SOURCE = $(CPP_DIR)/main.cu
+ADDITION_SOURCE = $(ADDITION_DIR)/addition.cu
+ADDITION_HEADER = $(ADDITION_DIR)/addition.h
+MEMORY_MANAGEMENT_SOURCE = $(MEMORY_MANAGEMENT_DIR)/memory_management.cu 
+MEMORY_MANAGEMENT_HEADER = $(MEMORY_MANAGEMENT_DIR)/memory_management.hpp 
 
 # Object Files
-C_OBJECTS = $(BUILD_DIR)/c_main.o \
-			$(BUILD_DIR)/c_helper.o 
-
-CPP_OBJECTS = $(BUILD_DIR)/cpp_main.o \
-              $(BUILD_DIR)/cpp_helpfunctions.o 
+C_OBJECT = $(BUILD_DIR)/c_main.o 
+CPP_OBJECT = $(BUILD_DIR)/cpp_main.o 
+ADDITION_OBJECT = $(BUILD_DIR)/addition.o
+MEMORY_MANAGEMENT_OBJECT = $(BUILD_DIR)/memory_management.o
 
 # Target Executables
-TARGET_C = matrix_add_c
-TARGET_CPP = matrix_add_cpp
+TARGET_C_ADDITION = matrix_add_c
+TARGET_CPP_ADDITION = matrix_add_cpp
 
 # Colors for output
 RED = \033[0;31m
@@ -51,10 +51,10 @@ NC = \033[0m
 
 # Default Target 
 .PHONY: all
-all: $(BUILD_DIR) $(TARGET_C) $(TARGET_CPP)
+all: $(BUILD_DIR) $(TARGET_C_ADDITION) $(TARGET_CPP_ADDITION)
 	@echo "$(GREEN) Build Complete!$(NC)"
-	@echo "$(BLUE)Run C version --> ./$(TARGET_C)$(NC)"
-	@echo "$(BLUE)Run C++ version --> ./$(TARGET_CPP)$(NC)"
+	@echo "$(BLUE)Run C version --> ./$(TARGET_C_ADDITION)$(NC)"
+	@echo "$(BLUE)Run C++ version --> ./$(TARGET_CPP_ADDITION)$(NC)"
 
 # Create Build Directory
 $(BUILD_DIR):
@@ -65,47 +65,52 @@ $(BUILD_DIR):
 #	C (CUDA) Build Rules
 ###############################################################################
 # Build Executable
-$(TARGET_C): $(C_OBJECTS)
+$(TARGET_C_ADDITION): $(C_OBJECT) $(ADDITION_OBJECT)
 	@echo "$(BLUE)Linking C Version$(NC)"
 	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Compile Main
-$(BUILD_DIR)/c_main.o: $(C_SOURCES) $(C_HELPER_HEADER)
+$(BUILD_DIR)/c_main.o: $(C_SOURCE) $(ADDITION_HEADER)
 	@echo "$(YELLOW)Compiling C main$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(SRC_DIR) -c $< -o $@
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(SRC_DIR) -I$(ADDITION_DIR) -c $< -o $@
 
-# Compile C Helper Functions
-$(BUILD_DIR)/c_helper.o: $(C_HELPER_SOURCE) $(C_HELPER_HEADER)
-	@echo "$(YELLOW)Compiling C helper functions$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(SRC_DIR) -c $< -o $@
+# Compile Addition Functions
+$(BUILD_DIR)/addition.o: $(ADDITION_SOURCE) $(ADDITION_HEADER)
+	@echo "$(YELLOW)Compiling addition functions$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(ADDITION_DIR) -c $< -o $@
 
 ###############################################################################
 #	C++ (CUDA) Build Rules
 ###############################################################################
 # Build Executable
-$(TARGET_CPP): $(CPP_OBJECTS)
+$(TARGET_CPP_ADDITION): $(CPP_OBJECT) $(ADDITION_OBJECT) $(MEMORY_MANAGEMENT_OBJECT)
 	@echo "$(BLUE)Linking C++ version$(NC)"
 	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Compile Main
-$(BUILD_DIR)/cpp_main.o: $(CPP_DIR)/main.cu $(CPP_HEADERS)
+$(BUILD_DIR)/cpp_main.o: $(CPP_SOURCE) $(ADDITION_HEADER) $(MEMORY_MANAGEMENT_HEADER)
 	@echo "$(YELLOW)Compiling C++ main$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) -I$(SRC_DIR) -c $< -o $@
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) -I$(SRC_DIR) -I$(ADDITION_DIR) -I$(MEMORY_MANAGEMENT_DIR) -c $< -o $@
 
-# Compile C++ Help Functions
-$(BUILD_DIR)/cpp_helpfunctions.o: $(CPP_DIR)/helpfunctions.cu $(CPP_DIR)/helpfunctions.hpp
-	@echo "$(YELLOW)Compiling C++ helper functions$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -c $< -o $@
+# Compile Addition Functions
+$(BUILD_DIR)/addition.o: $(ADDITION_SOURCE) $(ADDITION_HEADER)
+	@echo "$(YELLOW)Compiling addition functions$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(ADDITION_DIR) -c $< -o $@
+
+# Compile Memory Management Functions
+$(BUILD_DIR)/memory_management.o: $(MEMORY_MANAGEMENT_SOURCE) $(MEMORY_MANAGEMENT_HEADER)
+	@echo "$(YELLOW)Compiling memory management functions$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(MEMORY_MANAGEMENT_DIR) -I$(ADDITION_DIR) -c $< -o $@
 
 ###############################################################################
 #	Build Targets
 ###############################################################################
 .PHONY: c cpp
-c: $(BUILD_DIR) $(TARGET_C)
-	@echo "$(GREEN)C Build Complete --> ./$(TARGET_C)$(NC)"
+c: $(BUILD_DIR) $(TARGET_C_ADDITION)
+	@echo "$(GREEN)C Build Complete --> ./$(TARGET_C_ADDITION)$(NC)"
 
-cpp: $(BUILD_DIR) $(TARGET_CPP)
-	@echo "$(GREEN)C++ Build Complete --> ./$(TARGET_CPP)$(NC)"
+cpp: $(BUILD_DIR) $(TARGET_CPP_ADDITION)
+	@echo "$(GREEN)C++ Build Complete --> ./$(TARGET_CPP_ADDITION)$(NC)"
 
 ###############################################################################
 #	Debug Build 
@@ -115,14 +120,14 @@ debug: debug-c debug-cpp
 	@echo "$(GREEN)Debug builds complete!$(NC)"
 
 debug-c: NVCC_FLAGS += -g -G -DDEBUG
-debug-c: TARGET_C := $(TARGET_C)_debug
-debug-c: $(BUILD_DIR) $(TARGET_C)
-	@echo "$(GREEN)C debug build complete: ./$(TARGET_C)$(NC)"
+debug-c: TARGET_C_ADDITION := $(TARGET_C_ADDITION)_debug
+debug-c: $(BUILD_DIR) $(TARGET_C_ADDITION)
+	@echo "$(GREEN)C debug build complete: ./$(TARGET_C_ADDITION)$(NC)"
 
 debug-cpp: NVCC_FLAGS += -g -G -DDEBUG
-debug-cpp: TARGET_CPP := $(TARGET_CPP)_debug
-debug-cpp: $(BUILD_DIR) $(TARGET_CPP)
-	@echo "$(GREEN)C++ debug build complete: ./$(TARGET_CPP)$(NC)"
+debug-cpp: TARGET_CPP_ADDITION := $(TARGET_CPP_ADDITION)_debug
+debug-cpp: $(BUILD_DIR) $(TARGET_CPP_ADDITION)
+	@echo "$(GREEN)C++ debug build complete: ./$(TARGET_CPP_ADDITION)$(NC)"
 
 ###############################################################################
 #	Run Program
@@ -130,13 +135,13 @@ debug-cpp: $(BUILD_DIR) $(TARGET_CPP)
 .PHONY: run run-c run-cpp
 run: run-c run-cpp
 
-run-c: $(TARGET_C)
+run-c: $(TARGET_C_ADDITION_ADDITION)
 	@echo "$(BLUE)Running C Matrix Addition$(NC)"
-	@./$(TARGET_C)
+	@./$(TARGET_C_ADDITION)
 
-run-cpp: $(TARGET_CPP)
+run-cpp: $(TARGET_CPP_ADDITION)
 	@echo "$(BLUE)Running C++ Matrix Addition$(NC)"
-	@./$(TARGET_CPP)
+	@./$(TARGET_CPP_ADDITION)
 
 ###############################################################################
 #	Clean
@@ -144,8 +149,8 @@ run-cpp: $(TARGET_CPP)
 .PHONY: clean clean-all
 clean:
 	@echo "$(YELLOW)Cleaning build files$(NC)"
-	@rm -rf $(BUILD_DIR) $(TARGET_C) $(TARGET_CPP)
-	@rm -f $(TARGET_C)_debug $(TARGET_CPP)_debug
+	@rm -rf $(BUILD_DIR) $(TARGET_C_ADDITION) $(TARGET_CPP_ADDITION)
+	@rm -f $(TARGET_C_ADDITION)_debug $(TARGET_CPP_ADDITION)_debug
 	@echo "$(GREEN)Clean complete$(NC)"
 
 clean-all: clean
@@ -178,13 +183,13 @@ gpu-info:
 .PHONY: benchmark benchmark-c benchmark-cpp
 benchmark: benchmark-c benchmark-cpp
 
-benchmark-c: $(TARGET_C)
+benchmark-c: $(TARGET_C_ADDITION)
 	@echo "$(BLUE)Running C benchmark$(NC)"
-	@time ./$(TARGET_C)
+	@time ./$(TARGET_C_ADDITION)
 
-benchmark-cpp: $(TARGET_CPP)
+benchmark-cpp: $(TARGET_CPP_ADDITION)
 	@echo "$(BLUE)Running C++ benchmark$(NC)"
-	@time ./$(TARGET_CPP)
+	@time ./$(TARGET_CPP_ADDITION)
 
 ###############################################################################
 #	Show Configuration
@@ -200,8 +205,8 @@ config:
 	@echo "  LDLIBS: $(LDLIBS)"
 	@echo "  C_SOURCE: $(C_SOURCES)"
 	@echo "  CPP_SOURCE: $(CPP_SOURCES)"
-	@echo "  C_HELPER: $(C_HELPER_HEADER)"
-	@echo "  CPP_HELPER: $(CPP_HEADERS)"
+	@echo "  C_HELPER: $(ADDITION_HEADER)"
+	@echo "  CPP_HELPER: $(MEMORY_MANAGEMENT_HEADER)"
 
 ###############################################################################
 #	Help
