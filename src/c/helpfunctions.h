@@ -1,6 +1,6 @@
-// addition.h
-#ifndef ADDITION_H
-#define ADDITION_H
+// helpfunctions.h
+#ifndef HELPFUNCTIONS_H
+#define HELPFUNCTIONS_H
 
 #include <sys/time.h>
 #include <stdlib.h>
@@ -44,4 +44,4 @@ __global__ void sumMatrixOnGPU2D(float *MatA, float *MatB, float *MatC, int nx, 
 }
 #endif
 
-#endif // ADDITION_H
+#endif 

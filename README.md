@@ -62,6 +62,7 @@ cuda_cnn/
 │   ├── src/
 │   │   ├── c/                     # Traditional C implementation
 │   │   │   ├── main.cu            # Main program with manual memory management
+<<<<<<< HEAD
 │   │   └── cpp/                   # C++ implementation with RAII
 │   │       ├── main.cu            # Main program with RAII wrappers
 │   │   └── addition/              # Matrix addition functions
@@ -70,6 +71,14 @@ cuda_cnn/
 │   │   └── memory_management/     # C++ implementation with RAII
 │   │       ├── memory_management.hpp  # Header with memory management RAII declarations
 │   │       └── memory_management.cu   # Implementation with memory management RAII functions
+=======
+│   │   │   ├── helpfunctions.h    # Traditional C header
+│   │   │   └── helpfunctions.cu   # Traditional C implementation
+│   │   └── cpp/                   # C++ implementation with RAII
+│   │       ├── main.cu            # Main program with RAII wrappers
+│   │       ├── helpfunctions.hpp  # Header with RAII declarations
+│   │       └── helpfunctions.cu   # Implementation with RAII functions
+>>>>>>> 14895c58600b1a5d362f26cdfb81f037917fc37f
 ├── .gitignore                     # 
 └── LICENSE                        # Copyright Information
 ├── README.md                      # Project Description

@@ -3,7 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+<<<<<<< HEAD
 #include "addition.h"  
+=======
+#include "helpfunctions.h"  
+>>>>>>> 14895c58600b1a5d362f26cdfb81f037917fc37f
 
 
 
