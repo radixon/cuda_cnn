@@ -79,6 +79,10 @@ public:
     // Access methods
     T* get();
     const T* get() const;
+    T* begin();
+    const T* begin() const;
+    T* end();
+    const T* end() const;
     
     // Memory transfer methods
     void copyFromHost(const T* hostPtr);
@@ -202,7 +206,10 @@ inline DeviceMemory<T>::DeviceMemory(size_t count) : size(count * sizeof(T)) {
 template<typename T>
 inline DeviceMemory<T>::~DeviceMemory() {
     if (ptr) {
-        cudaFree(ptr);
+        cudaError_t error = cudaFree(ptr);
+        if(error != cudaSuccess){
+            fprintf(stderr, "error freeing device memory: %s\n", cudaGetErrorString(error));
+        }
         ptr = nullptr;
     }
 }
@@ -231,6 +238,18 @@ inline T* DeviceMemory<T>::get() { return ptr; }
 
 template<typename T>
 inline const T* DeviceMemory<T>::get() const { return ptr; }
+
+template<typename T>
+inline T* DeviceMemory<T>::begin() { return ptr; }
+
+template<typename T>
+inline const T* DeviceMemory<T>::begin() const { return ptr; }
+
+template<typename T>
+inline T* DeviceMemory<T>::end() { return ptr; }
+
+template<typename T>
+inline const T* DeviceMemory<T>::end() const { return ptr; }
 
 template<typename T>
 inline void DeviceMemory<T>::copyFromHost(const T* hostPtr) {
