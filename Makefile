@@ -20,6 +20,7 @@ LDLIBS = -lcudart
 SRC_DIR = src
 C_DIR = $(SRC_DIR)/c
 CPP_DIR = $(SRC_DIR)/cpp
+UTILITY_DIR = $(SRC_DIR)/utility
 ADDITION_DIR = $(SRC_DIR)/addition
 MEMORY_MANAGEMENT_DIR = $(SRC_DIR)/memory_management
 BUILD_DIR = build
@@ -27,6 +28,8 @@ BUILD_DIR = build
 # Source Files
 C_SOURCE = $(C_DIR)/main.cu
 CPP_SOURCE = $(CPP_DIR)/main.cu
+UTILITY_SOURCE = $(UTILITY_DIR)/utility.cu
+UTILITY_HEADER = $(UTILITY_DIR)/utility.h
 ADDITION_SOURCE = $(ADDITION_DIR)/addition.cu
 ADDITION_HEADER = $(ADDITION_DIR)/addition.h
 MEMORY_MANAGEMENT_SOURCE = $(MEMORY_MANAGEMENT_DIR)/memory_management.cu 
@@ -35,6 +38,7 @@ MEMORY_MANAGEMENT_HEADER = $(MEMORY_MANAGEMENT_DIR)/memory_management.hpp
 # Object Files
 C_OBJECT = $(BUILD_DIR)/c_main.o 
 CPP_OBJECT = $(BUILD_DIR)/cpp_main.o 
+UTILITY_OBJECT = $(BUILD_DIR)/utility.o
 ADDITION_OBJECT = $(BUILD_DIR)/addition.o
 MEMORY_MANAGEMENT_OBJECT = $(BUILD_DIR)/memory_management.o
 
@@ -62,45 +66,48 @@ $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
 ###############################################################################
-#	C (CUDA) Build Rules
+#	Header Build Rules
 ###############################################################################
-# Build Executable
-$(TARGET_C_ADDITION): $(C_OBJECT) $(ADDITION_OBJECT)
-	@echo "$(BLUE)Linking C Version$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@ $(LDFLAGS) $(LDLIBS)
-
-# Compile Main
-$(BUILD_DIR)/c_main.o: $(C_SOURCE) $(ADDITION_HEADER)
-	@echo "$(YELLOW)Compiling C main$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(SRC_DIR) -I$(ADDITION_DIR) -c $< -o $@
+# Compile Utillity Functions
+$(BUILD_DIR)/utility.o: $(UTILITY_SOURCE) $(UTILITY_HEADER)
+	@echo "$(YELLOW)Compiling utility functions$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(UTILITY_DIR) -c $< -o $@
 
 # Compile Addition Functions
 $(BUILD_DIR)/addition.o: $(ADDITION_SOURCE) $(ADDITION_HEADER)
 	@echo "$(YELLOW)Compiling addition functions$(NC)"
 	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(ADDITION_DIR) -c $< -o $@
+
+###############################################################################
+#	C (CUDA) Build Rules
+###############################################################################
+# Build Executable
+$(TARGET_C_ADDITION): $(C_OBJECT) $(UTILITY_OBJECT) $(ADDITION_OBJECT)
+	@echo "$(BLUE)Linking C Version$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+
+# Compile Main
+$(BUILD_DIR)/c_main.o: $(C_SOURCE) $(UTILITY_HEADER) $(ADDITION_HEADER)
+	@echo "$(YELLOW)Compiling C main$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(SRC_DIR) -I$(UTILITY_DIR) -I$(ADDITION_DIR) -c $< -o $@
 
 ###############################################################################
 #	C++ (CUDA) Build Rules
 ###############################################################################
 # Build Executable
-$(TARGET_CPP_ADDITION): $(CPP_OBJECT) $(ADDITION_OBJECT) $(MEMORY_MANAGEMENT_OBJECT)
+$(TARGET_CPP_ADDITION): $(CPP_OBJECT) $(UTILITY_OBJECT) $(ADDITION_OBJECT) $(MEMORY_MANAGEMENT_OBJECT)
 	@echo "$(BLUE)Linking C++ version$(NC)"
 	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Compile Main
-$(BUILD_DIR)/cpp_main.o: $(CPP_SOURCE) $(ADDITION_HEADER) $(MEMORY_MANAGEMENT_HEADER)
+$(BUILD_DIR)/cpp_main.o: $(CPP_SOURCE) $(UTILITY_HEADER) $(ADDITION_HEADER) $(MEMORY_MANAGEMENT_HEADER)
 	@echo "$(YELLOW)Compiling C++ main$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) -I$(SRC_DIR) -I$(ADDITION_DIR) -I$(MEMORY_MANAGEMENT_DIR) -c $< -o $@
-
-# Compile Addition Functions
-$(BUILD_DIR)/addition.o: $(ADDITION_SOURCE) $(ADDITION_HEADER)
-	@echo "$(YELLOW)Compiling addition functions$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(ADDITION_DIR) -c $< -o $@
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) -I$(SRC_DIR) -I$(UTILITY_DIR) -I$(ADDITION_DIR) -I$(MEMORY_MANAGEMENT_DIR) -c $< -o $@
 
 # Compile Memory Management Functions
 $(BUILD_DIR)/memory_management.o: $(MEMORY_MANAGEMENT_SOURCE) $(MEMORY_MANAGEMENT_HEADER)
 	@echo "$(YELLOW)Compiling memory management functions$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(MEMORY_MANAGEMENT_DIR) -I$(ADDITION_DIR) -c $< -o $@
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(MEMORY_MANAGEMENT_DIR) -I$(UTILITY_DIR) -I$(ADDITION_DIR) -c $< -o $@
 
 ###############################################################################
 #	Build Targets

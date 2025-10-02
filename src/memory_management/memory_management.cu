@@ -1,6 +1,7 @@
 // memory_management.cu
 #include "memory_management.hpp"
 #include "addition.h"
+#include "utility.h"
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
