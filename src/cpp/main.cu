@@ -7,10 +7,22 @@
 #include "addition.h"
 #include "memory_management.hpp"  
 
-
+void addition(char *title, char *name);
 
 int main(int argc, char **argv) {
-    printf("%s Starting\n", argv[0]);
+    for(int i=1; i < argc; i++){
+        if(strcmp(argv[i], "addition") == 0){
+            addition(argv[0], argv[i]);
+        }  
+    }
+     
+
+    // reset device
+    return (0);
+}
+
+void addition(char *title, char *name){
+    printf("%s Starting %s\n", title, name);
 
     // set up device
     CudaDevice device(0);
@@ -70,7 +82,4 @@ int main(int argc, char **argv) {
 
     // check device results
     checkResult(hostRef.get(), gpuRef.get(), nxy);
-
-    // reset device
-    return (0);
 }

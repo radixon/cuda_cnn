@@ -3,13 +3,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "addition.h" 
+#include "addition.h"
+#include "sobel.h" 
 #include "utility.h" 
 
-
+void addition(char *title, char *name);
+void sobel(char *title, char *name);
 
 int main(int argc, char **argv) {
-    printf("%s Starting...\n", argv[0]);
+    for(int i = 1; i < argc; i++){
+        if(strcmp(argv[i], "addition") == 0){
+            addition(argv[0], argv[i]);
+        }
+        
+        if(strcmp(argv[i], "sobel") == 0){
+            sobel(argv[0], argv[i]);
+        }
+    }
+           
+    return (0);
+}
+
+void addition(char *title, char *name){
+    printf("%s Starting %s\n", title, name);
 
     // set up device
     int dev = 0;
@@ -86,5 +102,78 @@ int main(int argc, char **argv) {
 
     // reset device
     cudaDeviceReset();
-    return (0);
+}
+
+void sobel(char *title, char *name){
+    printf("%s Starting %s\n", title, name);
+
+    // set up device
+    int dev = 0;
+    struct cudaDeviceProp deviceProp;
+    CHECK(cudaGetDeviceProperties(&deviceProp, dev));
+    printf("Using Device %d: %s\n", dev, deviceProp.name);
+    CHECK(cudaSetDevice(dev));
+
+    // set up image dimensions (typically smaller than matrix operations)
+    int width = 1024;   // Image width
+    int height = 1024;  // Image height
+    int nPixels = width * height;
+    int nBytes = nPixels * sizeof(float);
+    printf("Image size: width %d height %d\n", width, height);
+
+    // malloc host memory
+    float *h_input, *hostRef, *gpuRef;
+    h_input = (float *)malloc(nBytes);
+    hostRef = (float *)malloc(nBytes);
+    gpuRef = (float *)malloc(nBytes);
+
+    // initialize input image data
+    double iStart = cpuSecond();
+    generateTestImage(h_input, width, height); // This would typically load an actual image
+    double iElaps = cpuSecond() - iStart;
+    
+    memset(hostRef, 0, nBytes);
+    memset(gpuRef, 0, nBytes);
+
+    // apply Sobel on host for result verification
+    iStart = cpuSecond();
+    sobelVerticalOnHost(h_input, hostRef, width, height);
+    iElaps = cpuSecond() - iStart;
+    printf("sobelVerticalOnHost elapsed %f sec\n", iElaps);
+
+    // malloc device memory
+    float *d_input, *d_output;
+    cudaMalloc((void **)&d_input, nBytes);
+    cudaMalloc((void **)&d_output, nBytes);
+
+    // transfer data from host to device
+    cudaMemcpy(d_input, h_input, nBytes, cudaMemcpyHostToDevice);
+
+    // launch Sobel kernel
+    int dimx = 16;
+    int dimy = 16;
+    dim3 block(dimx, dimy);
+    dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
+    
+    iStart = cpuSecond();
+    sobelVerticalOnGPU<<<grid, block>>>(d_input, d_output, width, height);
+    cudaDeviceSynchronize();
+    iElaps = cpuSecond() - iStart;
+    printf("sobelVerticalOnGPU <<<(%d,%d), (%d,%d)>>> elapsed %f sec\n", 
+           grid.x, grid.y, block.x, block.y, iElaps);
+
+    // copy result back to host
+    cudaMemcpy(gpuRef, d_output, nBytes, cudaMemcpyDeviceToHost);
+
+    // check results
+    compareSobelResults(hostRef, gpuRef, nPixels, 1e-4f);
+
+    // cleanup
+    cudaFree(d_input);
+    cudaFree(d_output);
+    free(h_input);
+    free(hostRef);
+    free(gpuRef);
+
+    cudaDeviceReset();
 }

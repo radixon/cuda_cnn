@@ -27,7 +27,9 @@ extern "C" {
 // Function declarations
 double cpuSecond(void);
 void initialData(float *ip, int size);
+void generateTestImage(float *image, int width, int height);
 void checkResult(float *hostRef, float *gpuRef, int N);
+bool compareSobelResults(float *host_result, float *gpu_result, int size, float tolerance = 1e-5f);
 
 // Additional utility functions
 void printMatrix(float *matrix, int nx, int ny, const char* name);

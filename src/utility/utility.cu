@@ -24,6 +24,27 @@ void initialData(float *ip, int size) {
     }
 }
 
+// Generate test image
+void generateTestImage(float *image, int width, int height) {
+    for(int y = 0; y < height; y++) {
+        for(int x = 0; x < width; x++) {
+            // Create a simple pattern with edges
+            if(x < width/3) {
+                image[y * width + x] = 0.0f;  // Black region
+            } else if(x < 2*width/3) {
+                image[y * width + x] = 128.0f;  // Gray region
+            } else {
+                image[y * width + x] = 255.0f;  // White region
+            }
+            
+            // Add some vertical stripes for testing
+            if((x % 20) < 5) {
+                image[y * width + x] = 255.0f - image[y * width + x];
+            }
+        }
+    }
+}
+
 // Check results between CPU and GPU
 void checkResult(float *hostRef, float *gpuRef, int N) {
     double epsilon = 1.0E-8;
@@ -53,6 +74,30 @@ void checkResult(float *hostRef, float *gpuRef, int N) {
         printf("Arrays do not match! Found %d errors out of %d elements.\n\n", 
                errorCount, N);
     }
+}
+
+// Function to compare results
+bool compareSobelResults(float *host_result, float *gpu_result, int size, float tolerance) {
+    int mismatches = 0;
+    float max_diff = 0.0f;
+    
+    for(int i = 0; i < size; i++) {
+        float diff = fabsf(host_result[i] - gpu_result[i]);
+        if(diff > tolerance) {
+            mismatches++;
+            if(diff > max_diff) {
+                max_diff = diff;
+            }
+        }
+    }
+    
+    printf("Comparison Results:\n");
+    printf("  Total elements: %d\n", size);
+    printf("  Mismatches: %d (%.2f%%)\n", mismatches, (float)mismatches/size * 100.0f);
+    printf("  Maximum difference: %f\n", max_diff);
+    printf("  Tolerance: %f\n\n", tolerance);
+    
+    return mismatches == 0;
 }
 
 // Print matrix (useful for debugging small matrices)

@@ -1,5 +1,5 @@
-# Matrix Addition
-#########################
+# Matrix Makefile
+##########################
 
 # Compiler Settings
 NVCC = nvcc
@@ -22,6 +22,7 @@ C_DIR = $(SRC_DIR)/c
 CPP_DIR = $(SRC_DIR)/cpp
 UTILITY_DIR = $(SRC_DIR)/utility
 ADDITION_DIR = $(SRC_DIR)/addition
+SOBEL_DIR = $(SRC_DIR)/sobel
 MEMORY_MANAGEMENT_DIR = $(SRC_DIR)/memory_management
 BUILD_DIR = build
 
@@ -32,6 +33,8 @@ UTILITY_SOURCE = $(UTILITY_DIR)/utility.cu
 UTILITY_HEADER = $(UTILITY_DIR)/utility.h
 ADDITION_SOURCE = $(ADDITION_DIR)/addition.cu
 ADDITION_HEADER = $(ADDITION_DIR)/addition.h
+SOBEL_SOURCE = $(SOBEL_DIR)/sobel.cu
+SOBEL_HEADER = $(SOBEL_DIR)/sobel.h
 MEMORY_MANAGEMENT_SOURCE = $(MEMORY_MANAGEMENT_DIR)/memory_management.cu 
 MEMORY_MANAGEMENT_HEADER = $(MEMORY_MANAGEMENT_DIR)/memory_management.hpp 
 
@@ -40,11 +43,15 @@ C_OBJECT = $(BUILD_DIR)/c_main.o
 CPP_OBJECT = $(BUILD_DIR)/cpp_main.o 
 UTILITY_OBJECT = $(BUILD_DIR)/utility.o
 ADDITION_OBJECT = $(BUILD_DIR)/addition.o
+SOBEL_OBJECT = $(BUILD_DIR)/sobel.o
 MEMORY_MANAGEMENT_OBJECT = $(BUILD_DIR)/memory_management.o
 
 # Target Executables
-TARGET_C_ADDITION = matrix_add_c
-TARGET_CPP_ADDITION = matrix_add_cpp
+TARGET_C_ADDITION = matrix_c
+TARGET_CPP_ADDITION = matrix_cpp
+
+# Target Arguments
+ARGS ?= addition sobel
 
 # Colors for output
 RED = \033[0;31m
@@ -78,21 +85,26 @@ $(BUILD_DIR)/addition.o: $(ADDITION_SOURCE) $(ADDITION_HEADER)
 	@echo "$(YELLOW)Compiling addition functions$(NC)"
 	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(ADDITION_DIR) -c $< -o $@
 
+# Compile Sobel Functions
+$(BUILD_DIR)/sobel.o: $(SOBEL_SOURCE) $(SOBEL_HEADER)
+	@echo "$(YELLOW)Compiling sobel functions$(NC)"
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(SOBEL_DIR) -c $< -o $@
+
 ###############################################################################
-#	C (CUDA) Build Rules
+#	C (CUDA) Matrix Addition Build Rules
 ###############################################################################
 # Build Executable
-$(TARGET_C_ADDITION): $(C_OBJECT) $(UTILITY_OBJECT) $(ADDITION_OBJECT)
+$(TARGET_C_ADDITION): $(C_OBJECT) $(UTILITY_OBJECT) $(ADDITION_OBJECT) $(SOBEL_OBJECT)
 	@echo "$(BLUE)Linking C Version$(NC)"
 	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Compile Main
-$(BUILD_DIR)/c_main.o: $(C_SOURCE) $(UTILITY_HEADER) $(ADDITION_HEADER)
+$(BUILD_DIR)/c_main.o: $(C_SOURCE) $(UTILITY_HEADER) $(ADDITION_HEADER) $(SOBEL_HEADER)
 	@echo "$(YELLOW)Compiling C main$(NC)"
-	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(SRC_DIR) -I$(UTILITY_DIR) -I$(ADDITION_DIR) -c $< -o $@
+	$(NVCC) $(NVCC_FLAGS) $(GPU_ARCH) $(INCLUDES) -I$(SRC_DIR) -I$(UTILITY_DIR) -I$(ADDITION_DIR) -I$(SOBEL_DIR) -c $< -o $@
 
 ###############################################################################
-#	C++ (CUDA) Build Rules
+#	C++ (CUDA) Matrix Addition Build Rules
 ###############################################################################
 # Build Executable
 $(TARGET_CPP_ADDITION): $(CPP_OBJECT) $(UTILITY_OBJECT) $(ADDITION_OBJECT) $(MEMORY_MANAGEMENT_OBJECT)
@@ -143,12 +155,12 @@ debug-cpp: $(BUILD_DIR) $(TARGET_CPP_ADDITION)
 run: run-c run-cpp
 
 run-c: $(TARGET_C_ADDITION_ADDITION)
-	@echo "$(BLUE)Running C Matrix Addition$(NC)"
-	@./$(TARGET_C_ADDITION)
+	@echo "$(BLUE)Running C Matrix Operations$(NC)"
+	@./$(TARGET_C_ADDITION) $(ARGS)
 
 run-cpp: $(TARGET_CPP_ADDITION)
-	@echo "$(BLUE)Running C++ Matrix Addition$(NC)"
-	@./$(TARGET_CPP_ADDITION)
+	@echo "$(BLUE)Running C++ Matrix Operations$(NC)"
+	@./$(TARGET_CPP_ADDITION) $(ARGS)
 
 ###############################################################################
 #	Clean
