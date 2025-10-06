@@ -1,24 +1,31 @@
-# CUDA Matrix Addition with RAII Memory Management
+# CUDA Matrix Operations with RAII Memory Management
 
-A high-performance CUDA CNN implementation.  Currently the repo is of matrix addition demonstrating efficient GPU programming techniques with both traditional C and modern C++ RAII (Resource Acquisition Is Initialization) memory management approaches.  
+A high-performance CUDA implementation demonstrating efficient GPU programming techniques with both traditional C and modern C++ RAII (Resource Acquisition Is Initialization) memory management approaches. The project currently supports **matrix addition** and **Sobel vertical edge detection**, providing a foundation for CNN and image processing operations.
 
 ## Features
 
-* GPU-Accelerated Matrix Addition : Parallel computation using CUDA kernels
-* Dual Implementation : Both C and C++ versions available
-* RAII Memory Management : Automatic memory cleanup with C++ destructors (C++ version)
-* Traditional C Implementation : Manual memory management (C Version)
-* Performance Benchmarking : CPU vs GPU timing comparisons
-* Error Checking : Comprehensive CUDA error handling and result validation
-* Memory Safety : Prevents memory leaks with smart wrapper classes (C++ version)
-* Cross-Platform : Compatible with modern CUDA-enabled GPUs
+### Core Operations
+* **GPU-Accelerated Matrix Addition**: Parallel computation using optimized CUDA kernels
+* **Sobel Vertical Edge Detection**: GPU-accelerated image processing with convolution operations
+* **Dual Implementation**: Both C and C++ versions available for each operation
+* **Performance Benchmarking**: CPU vs GPU timing comparisons with detailed metrics
+
+### Memory Management
+* **RAII Memory Management**: Automatic memory cleanup with C++ destructors (C++ version)
+* **Traditional C Implementation**: Manual memory management with explicit error checking (C version)
+* **Memory Safety**: Prevents memory leaks with smart wrapper classes (C++ version)
+* **Comprehensive Error Handling**: CUDA error checking and result validation
+
+### Platform Support
+* **Cross-Platform**: Compatible with modern CUDA-enabled GPUs
+* **Flexible Build System**: Makefile with multiple build targets and configurations
 
 ## Requirements
 
-* CUDA Toolkit : Version 10.0 or higher
-* GPU : CUDA-capable device (Compute Capability 3.5+)
-* Compiler : nvcc with C++11 support
-* OS : Linux, Windows, or macOS
+* **CUDA Toolkit**: Version 10.0 or higher
+* **GPU**: CUDA-capable device (Compute Capability 3.5+)
+* **Compiler**: nvcc with C++14 support
+* **OS**: Linux, Windows, or macOS
 
 ## Installation
 
@@ -36,17 +43,20 @@ nvcc --version
 nvidia-smi
 ```
 
-## Build Project
+### Check GPU Compatibility
 
 ```bash
-# Both Versions
-make all
+make check-cuda
+make gpu-info
+```
 
-# C Version
-make c
+### Build Project
 
-# C++ Version
-make cpp
+```bash
+# Build Versions
+make     # Both Versions
+make c   # C Version
+make cpp # C++ Version
 
 # Debug Versions
 make debug      # Both
@@ -58,22 +68,30 @@ make debug-cpp  # C++ Debug
 
 ```
 cuda_cnn/
-├── cuda_cnn/
-│   ├── src/
-│   │   ├── c/                     # Traditional C implementation
-│   │   │   ├── main.cu            # Main program with manual memory management
-│   │   └── cpp/                   # C++ implementation with RAII
-│   │       ├── main.cu            # Main program with RAII wrappers
-│   │   └── addition/              # Matrix addition functions
-│   │   │   ├── addition.h         # Matrix addition header
-│   │   │   └── addition.cu        # Matrix addition implementation
-│   │   └── memory_management/     # C++ implementation with RAII
-│   │       ├── memory_management.hpp  # Header with memory management RAII declarations
-│   │       └── memory_management.cu   # Implementation with memory management RAII functions
-├── .gitignore                     # 
-└── LICENSE                        # Copyright Information
-├── README.md                      # Project Description
-└── Makefile                       # Build configuration
+├── src/
+│   ├── c/                         # Traditional C implementations
+│   │   ├── main.cu               # Matrix addition main (C)
+│   │   └── sobel_main.cu         # Sobel edge detection main (C)
+│   ├── cpp/                      # C++ implementations with RAII
+│   │   ├── main.cu               # Matrix addition main (C++)
+│   │   └── sobel_main.cu         # Sobel edge detection main (C++)
+│   ├── utility/                  # Common utility functions
+│   │   ├── utility.h             # Utility header declarations
+│   │   └── utility.cu            # Timer, initialization, validation functions
+│   ├── addition/                 # Matrix addition operations
+│   │   ├── addition.h            # Matrix addition header
+│   │   └── addition.cu           # GPU kernels for matrix addition
+│   ├── sobel/                    # Sobel edge detection operations
+│   │   ├── sobel.h               # Sobel operation header
+│   │   └── sobel.cu              # GPU kernels for Sobel edge detection
+│   └── memory_management/        # C++ RAII memory management
+│       ├── memory_management.hpp # RAII wrapper class declarations
+│       └── memory_management.cu  # RAII implementation
+├── build/                        # Compiled object files
+├── Makefile                      # Build configuration
+├── README.md                     # Project documentation
+├── LICENSE                       # Copyright information
+└── .gitignore                    # Git ignore rules
 ```
 
 ## Usage
@@ -113,3 +131,10 @@ DeviceMemory<float> d_MatA(nxy);
 
 // Memory automatically freed when objects go out of scope
 ```
+
+### Benefits of RAII Approach
+
+* **Exception Safety:** Automatic cleanup even during exceptions
+* **Memory Leak Prevention:** Guaranteed resource deallocation
+* **Clean Code:** No manual memory management calls
+* **CUDA Error Handling:** Integrated error checking in wrapper classes
