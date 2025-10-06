@@ -150,8 +150,8 @@ void sobel(char *title, char *name){
     cudaMemcpy(d_input, h_input, nBytes, cudaMemcpyHostToDevice);
 
     // launch Sobel kernel
-    int dimx = 16;
-    int dimy = 16;
+    int dimx = 32;
+    int dimy = 32;
     dim3 block(dimx, dimy);
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
     
@@ -166,7 +166,7 @@ void sobel(char *title, char *name){
     cudaMemcpy(gpuRef, d_output, nBytes, cudaMemcpyDeviceToHost);
 
     // check results
-    compareSobelResults(hostRef, gpuRef, nPixels, 1e-4f);
+    compareSobelResults(hostRef, gpuRef, nPixels, 1e-5f);
 
     // cleanup
     cudaFree(d_input);
